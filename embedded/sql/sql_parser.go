@@ -21,7 +21,7 @@ type yySymType struct {
 	values     []ValueExp
 	value      ValueExp
 	id         string
-	number     uint64
+	integer    uint64
 	float      float64
 	str        string
 	boolean    bool
@@ -112,7 +112,7 @@ const LOP = 57403
 const CMPOP = 57404
 const IDENTIFIER = 57405
 const TYPE = 57406
-const NUMBER = 57407
+const INTEGER = 57407
 const FLOAT = 57408
 const VARCHAR = 57409
 const BOOLEAN = 57410
@@ -187,7 +187,7 @@ var yyToknames = [...]string{
 	"CMPOP",
 	"IDENTIFIER",
 	"TYPE",
-	"NUMBER",
+	"INTEGER",
 	"FLOAT",
 	"VARCHAR",
 	"BOOLEAN",
@@ -818,7 +818,7 @@ yydefault:
 	case 14:
 		yyDollar = yyS[yypt-4 : yypt+1]
 		{
-			yyVAL.stmt = &UseSnapshotStmt{sinceTx: yyDollar[3].number, asBefore: yyDollar[4].number}
+			yyVAL.stmt = &UseSnapshotStmt{sinceTx: yyDollar[3].integer, asBefore: yyDollar[4].integer}
 		}
 	case 15:
 		yyDollar = yyS[yypt-11 : yypt+1]
@@ -843,12 +843,12 @@ yydefault:
 	case 19:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
-			yyVAL.number = 0
+			yyVAL.integer = 0
 		}
 	case 20:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
-			yyVAL.number = yyDollar[3].number
+			yyVAL.integer = yyDollar[3].integer
 		}
 	case 21:
 		yyDollar = yyS[yypt-0 : yypt+1]
@@ -883,12 +883,12 @@ yydefault:
 	case 27:
 		yyDollar = yyS[yypt-6 : yypt+1]
 		{
-			yyVAL.stmt = &DeleteFromStmt{tableRef: yyDollar[3].tableRef, where: yyDollar[4].exp, indexOn: yyDollar[5].ids, limit: int(yyDollar[6].number)}
+			yyVAL.stmt = &DeleteFromStmt{tableRef: yyDollar[3].tableRef, where: yyDollar[4].exp, indexOn: yyDollar[5].ids, limit: int(yyDollar[6].integer)}
 		}
 	case 28:
 		yyDollar = yyS[yypt-7 : yypt+1]
 		{
-			yyVAL.stmt = &UpdateStmt{tableRef: yyDollar[2].tableRef, updates: yyDollar[4].updates, where: yyDollar[5].exp, indexOn: yyDollar[6].ids, limit: int(yyDollar[7].number)}
+			yyVAL.stmt = &UpdateStmt{tableRef: yyDollar[2].tableRef, updates: yyDollar[4].updates, where: yyDollar[5].exp, indexOn: yyDollar[6].ids, limit: int(yyDollar[7].integer)}
 		}
 	case 29:
 		yyDollar = yyS[yypt-0 : yypt+1]
@@ -983,7 +983,7 @@ yydefault:
 	case 47:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
-			yyVAL.value = &Number{val: int64(yyDollar[1].number)}
+			yyVAL.value = &Number{val: int64(yyDollar[1].integer)}
 		}
 	case 48:
 		yyDollar = yyS[yypt-1 : yypt+1]
@@ -1043,17 +1043,17 @@ yydefault:
 	case 59:
 		yyDollar = yyS[yypt-5 : yypt+1]
 		{
-			yyVAL.colSpec = &ColSpec{colName: yyDollar[1].id, colType: yyDollar[2].sqlType, maxLen: int(yyDollar[3].number), notNull: yyDollar[4].boolean, autoIncrement: yyDollar[5].boolean}
+			yyVAL.colSpec = &ColSpec{colName: yyDollar[1].id, colType: yyDollar[2].sqlType, maxLen: int(yyDollar[3].integer), notNull: yyDollar[4].boolean, autoIncrement: yyDollar[5].boolean}
 		}
 	case 60:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
-			yyVAL.number = 0
+			yyVAL.integer = 0
 		}
 	case 61:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
-			yyVAL.number = yyDollar[2].number
+			yyVAL.integer = yyDollar[2].integer
 		}
 	case 62:
 		yyDollar = yyS[yypt-0 : yypt+1]
@@ -1093,7 +1093,7 @@ yydefault:
 				groupBy:   yyDollar[9].cols,
 				having:    yyDollar[10].exp,
 				orderBy:   yyDollar[11].ordcols,
-				limit:     int(yyDollar[12].number),
+				limit:     int(yyDollar[12].integer),
 			}
 		}
 	case 68:
@@ -1161,7 +1161,7 @@ yydefault:
 	case 80:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
-			yyDollar[1].tableRef.asBefore = yyDollar[2].number
+			yyDollar[1].tableRef.asBefore = yyDollar[2].integer
 			yyDollar[1].tableRef.as = yyDollar[3].id
 			yyVAL.ds = yyDollar[1].tableRef
 		}
@@ -1184,12 +1184,12 @@ yydefault:
 	case 84:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
-			yyVAL.number = 0
+			yyVAL.integer = 0
 		}
 	case 85:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		{
-			yyVAL.number = yyDollar[3].number
+			yyVAL.integer = yyDollar[3].integer
 		}
 	case 86:
 		yyDollar = yyS[yypt-0 : yypt+1]
@@ -1259,12 +1259,12 @@ yydefault:
 	case 99:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
-			yyVAL.number = 0
+			yyVAL.integer = 0
 		}
 	case 100:
 		yyDollar = yyS[yypt-2 : yypt+1]
 		{
-			yyVAL.number = yyDollar[2].number
+			yyVAL.integer = yyDollar[2].integer
 		}
 	case 101:
 		yyDollar = yyS[yypt-0 : yypt+1]
