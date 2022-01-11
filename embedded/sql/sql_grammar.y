@@ -84,6 +84,7 @@ func setResult(l yyLexer, stmts []SQLStmt) {
 %token <blob> BLOB
 %token <aggFn> AGGREGATE_FUNC
 %token <err> ERROR
+%token <dot> DOT
 
 %left  ','
 %right AS
@@ -531,12 +532,12 @@ col:
         $$ = &ColSelector{col: $1}
     }
 |
-    IDENTIFIER '.' IDENTIFIER
+    IDENTIFIER DOT IDENTIFIER
     {
         $$ = &ColSelector{table: $1, col: $3}
     }
 |
-    IDENTIFIER '.' IDENTIFIER '.' IDENTIFIER
+    IDENTIFIER DOT IDENTIFIER DOT IDENTIFIER
     {
         $$ = &ColSelector{db: $1, table: $3, col: $5}
     }
@@ -561,7 +562,7 @@ tableRef:
         $$ = &tableRef{table: $1}
     }
 |
-    IDENTIFIER '.' IDENTIFIER
+    IDENTIFIER DOT IDENTIFIER
     {
         $$ = &tableRef{db: $1, table: $3}
     }

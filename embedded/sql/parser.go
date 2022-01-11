@@ -331,15 +331,28 @@ func (l *lexer) Lex(lval *yySymType) int {
 			lval.err = err
 			return ERROR
 		}
+		// looking for a float
+		if isDot(l.r.nextChar) {
+			integerPart, _ := strconv.ParseUint(fmt.Sprintf("%c%s", ch, tail), 10, 64)
+			_, err := l.readDot() // consume dot
+			if err != nil {
+				lval.err = err
+				return ERROR
+			}
+			decimalPart, err := l.readNumber()
+			if err != nil {
+				lval.err = err
+				return ERROR
+			}
+			if val, err := strconv.ParseFloat(fmt.Sprintf("%d.%s", integerPart, decimalPart), 64); err == nil {
+				lval.float = val
+				return FLOAT
+			}
+		}
 
 		if val, err := strconv.ParseUint(fmt.Sprintf("%c%s", ch, tail), 10, 64); err == nil {
 			lval.number = val
 			return NUMBER
-		}
-
-		if val, err := strconv.ParseFloat(fmt.Sprintf("%c%s", ch, tail), 64); err == nil {
-			lval.float = val
-			return FLOAT
 		}
 
 		if err != nil {
@@ -443,6 +456,21 @@ func (l *lexer) Lex(lval *yySymType) int {
 		return PPARAM
 	}
 
+	if isDot(ch) {
+		if isNumber(l.r.nextChar) { // looking for  a float
+			decimalPart, err := l.readNumber()
+			if err != nil {
+				lval.err = err
+				return ERROR
+			}
+			if val, err := strconv.ParseFloat(fmt.Sprintf("%d.%s", 0, decimalPart), 64); err == nil {
+				lval.float = val
+				return FLOAT
+			}
+		}
+		return DOT
+	}
+
 	return int(ch)
 }
 
@@ -458,6 +486,10 @@ func (l *lexer) readWord() (string, error) {
 
 func (l *lexer) readNumber() (string, error) {
 	return l.readWhile(isNumber)
+}
+
+func (l *lexer) readDot() (string, error) {
+	return l.readWhile(isDot)
 }
 
 func (l *lexer) readString() (string, error) {
@@ -531,7 +563,7 @@ func isSpace(ch byte) bool {
 }
 
 func isNumber(ch byte) bool {
-	return ('0' <= ch && ch <= '9') || ch == '.'
+	return '0' <= ch && ch <= '9'
 }
 
 func isLetter(ch byte) bool {
@@ -544,4 +576,8 @@ func isComparison(ch byte) bool {
 
 func isQuote(ch byte) bool {
 	return ch == 0x27
+}
+
+func isDot(ch byte) bool {
+	return '.' == ch
 }

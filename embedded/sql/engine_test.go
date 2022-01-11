@@ -363,8 +363,20 @@ func TestFloatType(t *testing.T) {
 
 	t.Run("must insert float type", func(t *testing.T) {
 
-		_, _, err = engine.Exec("INSERT INTO float_table(ft) VALUES(105.2)", nil, nil)
+		_, _, err = engine.Exec("INSERT INTO float_table(ft) VALUES(.7)", nil, nil)
 		require.NoError(t, err)
+
+		_, _, err = engine.Exec("INSERT INTO float_table(ft) VALUES(.543210)", nil, nil)
+		require.NoError(t, err)
+
+		_, _, err = engine.Exec("INSERT INTO float_table(ft) VALUES(105.7)", nil, nil)
+		require.NoError(t, err)
+
+		_, _, err = engine.Exec("INSERT INTO float_table(ft) VALUES(00105.98988897)", nil, nil)
+		require.NoError(t, err)
+
+		_, _, err = engine.Exec("INSERT INTO float_table(ft) VALUES(105.9898.8897)", nil, nil)
+		require.Error(t, err)
 
 		r, err := engine.Query("SELECT ft FROM float_table", nil, nil)
 		require.NoError(t, err)
