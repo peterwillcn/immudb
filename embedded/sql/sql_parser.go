@@ -988,7 +988,7 @@ yydefault:
 	case 48:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
-			yyVAL.value = &Float{val: float64(yyDollar[1].float)}
+			yyVAL.value = &Float64{val: float64(yyDollar[1].float)}
 		}
 	case 49:
 		yyDollar = yyS[yypt-1 : yypt+1]

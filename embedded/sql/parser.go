@@ -97,7 +97,7 @@ var types = map[string]SQLValueType{
 	"VARCHAR":   VarcharType,
 	"BLOB":      BLOBType,
 	"TIMESTAMP": TimestampType,
-	"FLOAT":     FloatType,
+	"FLOAT":     Float64Type,
 }
 
 var aggregateFns = map[string]AggregateFn{

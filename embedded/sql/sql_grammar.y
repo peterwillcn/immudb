@@ -36,7 +36,7 @@ func setResult(l yyLexer, stmts []SQLStmt) {
     value ValueExp
     id string
     integer uint64
-	float float64
+    float float64
     str string
     boolean bool
     blob []byte
