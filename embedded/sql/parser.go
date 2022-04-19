@@ -97,6 +97,7 @@ var types = map[string]SQLValueType{
 	"VARCHAR":   VarcharType,
 	"BLOB":      BLOBType,
 	"TIMESTAMP": TimestampType,
+	"FLOAT":     FloatType,
 }
 
 var aggregateFns = map[string]AggregateFn{
@@ -331,14 +332,20 @@ func (l *lexer) Lex(lval *yySymType) int {
 			return ERROR
 		}
 
-		val, err := strconv.ParseUint(fmt.Sprintf("%c%s", ch, tail), 10, 64)
+		if val, err := strconv.ParseUint(fmt.Sprintf("%c%s", ch, tail), 10, 64); err == nil {
+			lval.number = val
+			return NUMBER
+		}
+
+		if val, err := strconv.ParseFloat(fmt.Sprintf("%c%s", ch, tail), 64); err == nil {
+			lval.float = val
+			return FLOAT
+		}
+
 		if err != nil {
 			lval.err = err
 			return ERROR
 		}
-
-		lval.number = val
-		return NUMBER
 	}
 
 	if isComparison(ch) {
@@ -524,7 +531,7 @@ func isSpace(ch byte) bool {
 }
 
 func isNumber(ch byte) bool {
-	return '0' <= ch && ch <= '9'
+	return ('0' <= ch && ch <= '9') || ch == '.'
 }
 
 func isLetter(ch byte) bool {

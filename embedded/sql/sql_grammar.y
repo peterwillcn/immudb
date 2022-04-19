@@ -36,6 +36,7 @@ func setResult(l yyLexer, stmts []SQLStmt) {
     value ValueExp
     id string
     number uint64
+	float float64
     str string
     boolean bool
     blob []byte
@@ -77,6 +78,7 @@ func setResult(l yyLexer, stmts []SQLStmt) {
 %token <id> IDENTIFIER
 %token <sqlType> TYPE
 %token <number> NUMBER
+%token <float> FLOAT
 %token <str> VARCHAR
 %token <boolean> BOOLEAN
 %token <blob> BLOB
@@ -179,7 +181,7 @@ ddlstmt:
         $$ = &UseDatabaseStmt{DB: $3}
     }
 |
-    USE SNAPSHOT opt_since opt_as_before 
+    USE SNAPSHOT opt_since opt_as_before
     {
         $$ = &UseSnapshotStmt{sinceTx: $3, asBefore: $4}
     }
@@ -353,10 +355,15 @@ values:
         $$ = append($1, $3)
     }
 
-val: 
+val:
     NUMBER
     {
         $$ = &Number{val: int64($1)}
+    }
+|
+	FLOAT
+    {
+        $$ = &Float{val: float64($1)}
     }
 |
     VARCHAR

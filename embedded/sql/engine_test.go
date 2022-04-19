@@ -341,6 +341,97 @@ func TestTimestampCasts(t *testing.T) {
 
 }
 
+func TestFloatType(t *testing.T) {
+	st, err := store.Open("temp", store.DefaultOptions())
+	require.NoError(t, err)
+	defer st.Close()
+	defer os.RemoveAll("temp")
+
+	engine, err := NewEngine(st, DefaultOptions().WithPrefix(sqlPrefix))
+	require.NoError(t, err)
+
+	_, _, err = engine.Exec("CREATE DATABASE db1", nil, nil)
+	require.NoError(t, err)
+
+	err = engine.SetDefaultDatabase("db1")
+	require.NoError(t, err)
+
+	_, _, err = engine.Exec("CREATE TABLE IF NOT EXISTS float_table (id INTEGER AUTO_INCREMENT, ft FLOAT, PRIMARY KEY id)", nil, nil)
+	require.NoError(t, err)
+
+	sel := EncodeSelector("", "db1", "float_table", "ft")
+
+	t.Run("must insert float type", func(t *testing.T) {
+
+		_, _, err = engine.Exec("INSERT INTO float_table(ft) VALUES(105.2)", nil, nil)
+		require.NoError(t, err)
+
+		r, err := engine.Query("SELECT ft FROM float_table", nil, nil)
+		require.NoError(t, err)
+		defer r.Close()
+
+		row, err := r.Read()
+		require.NoError(t, err)
+		require.Equal(t, FloatType, row.Values[sel].Type())
+	})
+
+	t.Run("must accept float as parameter", func(t *testing.T) {
+		_, _, err = engine.Exec(
+			"INSERT INTO float_table(ft) VALUES(@ft)", map[string]interface{}{
+				"ft": 0.4,
+			},
+			nil,
+		)
+		require.NoError(t, err)
+
+		r, err := engine.Query("SELECT ft FROM float_table ORDER BY id DESC LIMIT 1", nil, nil)
+		require.NoError(t, err)
+		defer r.Close()
+
+		row, err := r.Read()
+		require.NoError(t, err)
+		require.Equal(t, FloatType, row.Values[sel].Type())
+		require.Equal(t, 0.4, row.Values[sel].Value())
+	})
+
+	t.Run("must correctly validate float equality", func(t *testing.T) {
+		_, _, err = engine.Exec(
+			"INSERT INTO float_table(ft) VALUES(@ft)", map[string]interface{}{
+				"ft": 0.78,
+			},
+			nil,
+		)
+		require.NoError(t, err)
+
+		r, err := engine.Query("SELECT ft FROM float_table WHERE ft = @ft ORDER BY id", map[string]interface{}{
+			"ft": 0.78,
+		}, nil)
+		require.NoError(t, err)
+
+		row, err := r.Read()
+		require.NoError(t, err)
+		require.Equal(t, FloatType, row.Values[sel].Type())
+		require.Equal(t, 0.78, row.Values[sel].Value())
+
+		_, err = r.Read()
+		require.ErrorIs(t, err, ErrNoMoreRows)
+
+		err = r.Close()
+		require.NoError(t, err)
+
+		r, err = engine.Query("SELECT ts FROM float_table WHERE ft = @ft ORDER BY id", map[string]interface{}{
+			"ft": "2021-12-06 10:14",
+		}, nil)
+		require.NoError(t, err)
+
+		_, err = r.Read()
+		require.ErrorIs(t, err, ErrNotComparableValues)
+
+		err = r.Close()
+		require.NoError(t, err)
+	})
+}
+
 func TestAddColumn(t *testing.T) {
 	st, err := store.Open("sqldata_add_column", store.DefaultOptions())
 	require.NoError(t, err)
