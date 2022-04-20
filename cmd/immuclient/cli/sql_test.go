@@ -17,51 +17,10 @@ limitations under the License.
 package cli
 
 import (
-	"os"
 	"testing"
 
-	test "github.com/codenotary/immudb/cmd/immuclient/immuclienttest"
-	"github.com/codenotary/immudb/pkg/client/tokenservice"
-	"github.com/codenotary/immudb/pkg/server"
-	"github.com/codenotary/immudb/pkg/server/servertest"
 	"github.com/stretchr/testify/require"
 )
-
-func testCli(t *testing.T) (*cli, func()) {
-	options := server.DefaultOptions().WithAuth(true)
-	bs := servertest.NewBufconnServer(options)
-
-	err := bs.Start()
-	require.NoError(t, err)
-
-	cleanup := func() {
-		bs.Stop()
-		os.RemoveAll(options.Dir)
-		os.Remove(".state-")
-	}
-	setupFinished := false
-	defer func() {
-		if !setupFinished {
-			cleanup()
-		}
-	}()
-
-	ts := tokenservice.
-		NewFileTokenService().
-		WithHds(&test.HomedirServiceMock{}).
-		WithTokenFileName("token")
-	ic := test.NewClientTest(&test.PasswordReader{
-		Pass: []string{"immudb"},
-	}, ts)
-	ic.Connect(bs.Dialer)
-	ic.Login("immudb")
-
-	cli := new(cli)
-	cli.immucl = ic.Imc
-
-	setupFinished = true
-	return cli, cleanup
-}
 
 func TestSqlFloat(t *testing.T) {
 	cli, cleanup := testCli(t)

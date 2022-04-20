@@ -18,113 +18,104 @@ package cli
 
 import (
 	"os"
-	"strings"
 	"testing"
 
-	"github.com/codenotary/immudb/cmd/cmdtest"
-	"github.com/codenotary/immudb/pkg/client/tokenservice"
-
 	test "github.com/codenotary/immudb/cmd/immuclient/immuclienttest"
+	"github.com/codenotary/immudb/pkg/client/tokenservice"
 	"github.com/codenotary/immudb/pkg/server"
 	"github.com/codenotary/immudb/pkg/server/servertest"
+	"github.com/stretchr/testify/require"
 )
 
-func TestHealthCheck(t *testing.T) {
+func testCliNoLogin(t *testing.T) (*cli, func()) {
 	options := server.DefaultOptions().WithAuth(true)
 	bs := servertest.NewBufconnServer(options)
 
-	bs.Start()
-	defer bs.Stop()
+	err := bs.Start()
+	require.NoError(t, err)
 
-	defer os.RemoveAll(options.Dir)
-	defer os.Remove(".state-")
+	cleanup := func() {
+		bs.Stop()
+		os.RemoveAll(options.Dir)
+		os.Remove(".state-")
+	}
+	setupFinished := false
+	defer func() {
+		if !setupFinished {
+			cleanup()
+		}
+	}()
 
-	tkf := cmdtest.RandString()
-	ts := tokenservice.NewFileTokenService().WithTokenFileName(tkf)
+	ts := tokenservice.
+		NewFileTokenService().
+		WithHds(&test.HomedirServiceMock{}).
+		WithTokenFileName("token")
 	ic := test.NewClientTest(&test.PasswordReader{
 		Pass: []string{"immudb"},
 	}, ts)
 	ic.Connect(bs.Dialer)
-	ic.Login("immudb")
 
 	cli := new(cli)
 	cli.immucl = ic.Imc
-	msg, err := cli.healthCheck([]string{})
+	cli.immucl.WithFileTokenService(ts)
+
+	setupFinished = true
+	return cli, cleanup
+}
+
+func testCli(t *testing.T) (*cli, func()) {
+	cli, cleanup := testCliNoLogin(t)
+
+	_, err := cli.login([]string{"immudb"})
 	if err != nil {
-		t.Fatal("HealthCheck fail", err)
+		cleanup()
+		require.NoError(t, err)
 	}
-	if !strings.Contains(msg, "Health check OK") {
-		t.Fatal("HealthCheck fail")
-	}
+
+	return cli, cleanup
+}
+
+func testCliWithCommants(t *testing.T) (*cli, func()) {
+	cli, cleanup := testCli(t)
+
+	cli.commands = make(map[string]*command, 0)
+	cli.commandsList = make([]*command, 0)
+	cli.initCommands()
+	cli.helpInit()
+
+	return cli, cleanup
+}
+
+func TestHealthCheck(t *testing.T) {
+	cli, cleanup := testCli(t)
+	defer cleanup()
+
+	msg, err := cli.healthCheck([]string{})
+	require.NoError(t, err)
+	require.Contains(t, msg, "Health check OK")
 }
 
 func TestHistory(t *testing.T) {
-	options := server.DefaultOptions().WithAuth(true)
-	bs := servertest.NewBufconnServer(options)
+	cli, cleanup := testCli(t)
+	defer cleanup()
 
-	bs.Start()
-	defer bs.Stop()
-
-	defer os.RemoveAll(options.Dir)
-	defer os.Remove(".state-")
-
-	tkf := cmdtest.RandString()
-	ts := tokenservice.NewFileTokenService().WithTokenFileName(tkf)
-	ic := test.NewClientTest(&test.PasswordReader{
-		Pass: []string{"immudb"},
-	}, ts)
-	ic.Connect(bs.Dialer)
-	ic.Login("immudb")
-
-	cli := new(cli)
-
-	cli.immucl = ic.Imc
 	msg, err := cli.history([]string{"key"})
-	if err != nil {
-		t.Fatal("History fail", err)
-	}
-	if !strings.Contains(msg, "key not found") {
-		t.Fatalf("History fail %s", msg)
-	}
+	require.NoError(t, err)
+	require.Contains(t, msg, "key not found")
 
 	_, err = cli.set([]string{"key", "value"})
-	if err != nil {
-		t.Fatal("History fail", err)
-	}
+	require.NoError(t, err)
 
 	msg, err = cli.history([]string{"key"})
-	if err != nil {
-		t.Fatal("History fail", err)
-	}
-	if !strings.Contains(msg, "value") {
-		t.Fatalf("History fail %s", msg)
-	}
+	require.NoError(t, err)
+	require.Contains(t, msg, "value")
 }
+
 func TestVersion(t *testing.T) {
-	options := server.DefaultOptions().WithAuth(true)
-	bs := servertest.NewBufconnServer(options)
+	cli, cleanup := testCli(t)
+	defer cleanup()
 
-	bs.Start()
-	defer bs.Stop()
-
-	defer os.RemoveAll(options.Dir)
-	defer os.Remove(".state-")
-
-	tkf := cmdtest.RandString()
-	ts := tokenservice.NewFileTokenService().WithTokenFileName(tkf)
-	ic := test.NewClientTest(&test.PasswordReader{
-		Pass: []string{"immudb"},
-	}, ts)
-	ic.Connect(bs.Dialer)
-	ic.Login("immudb")
-
-	cli := new(cli)
-	cli.immucl = ic.Imc
 	msg, err := cli.version([]string{"key"})
-	if err != nil {
-		t.Fatal("version fail", err)
-	}
-	if !strings.Contains(msg, "no version info available") {
-		t.Fatalf("version fail %s", msg)
-	}
+	require.NoError(t, err)
+	require.Contains(t, msg, "no version info available")
 }

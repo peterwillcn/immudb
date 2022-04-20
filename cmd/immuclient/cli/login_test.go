@@ -17,53 +17,20 @@ limitations under the License.
 package cli
 
 import (
-	"github.com/codenotary/immudb/cmd/cmdtest"
-	"github.com/codenotary/immudb/pkg/client/tokenservice"
-	"os"
-	"strings"
 	"testing"
 
-	"github.com/codenotary/immudb/pkg/auth"
-
-	test "github.com/codenotary/immudb/cmd/immuclient/immuclienttest"
-	"github.com/codenotary/immudb/pkg/server"
-	"github.com/codenotary/immudb/pkg/server/servertest"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLogin(t *testing.T) {
-	options := server.DefaultOptions().WithAuth(true).WithAdminPassword(auth.SysAdminPassword)
-	bs := servertest.NewBufconnServer(options)
-
-	bs.Start()
-	defer bs.Stop()
-
-	defer os.RemoveAll(options.Dir)
-	defer os.Remove(".state-")
-
-	tkf := cmdtest.RandString()
-	ts := tokenservice.NewFileTokenService().WithTokenFileName(tkf)
-	ic := test.NewClientTest(&test.PasswordReader{
-		Pass: []string{"immudb"},
-	}, ts)
-	ic.Connect(bs.Dialer)
-
-	cli := new(cli)
-	cli.immucl = ic.Imc
-	cli.immucl.WithFileTokenService(ts)
+	cli, cleanup := testCliNoLogin(t)
+	defer cleanup()
 
 	msg, err := cli.login([]string{"immudb"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(msg, "immudb user has the default password") {
-		t.Fatalf("Login failed: %s", err)
-	}
+	require.NoError(t, err)
+	require.Contains(t, msg, "immudb user has the default password")
 
 	msg, err = cli.logout([]string{"immudb"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(msg, "Successfully logged out") {
-		t.Fatalf("Login failed: %s", err)
-	}
+	require.NoError(t, err)
+	require.Contains(t, msg, "Successfully logged out")
 }

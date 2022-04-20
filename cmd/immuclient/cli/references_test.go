@@ -17,76 +17,31 @@ limitations under the License.
 package cli
 
 import (
-	"os"
-	"strings"
 	"testing"
 
-	"github.com/codenotary/immudb/cmd/cmdtest"
-	test "github.com/codenotary/immudb/cmd/immuclient/immuclienttest"
-	"github.com/codenotary/immudb/pkg/client/tokenservice"
-	"github.com/codenotary/immudb/pkg/server"
-	"github.com/codenotary/immudb/pkg/server/servertest"
+	"github.com/stretchr/testify/require"
 )
 
 func TestReference(t *testing.T) {
-	options := server.DefaultOptions().WithAuth(true)
-	bs := servertest.NewBufconnServer(options)
+	cli, cleanup := testCli(t)
+	defer cleanup()
 
-	bs.Start()
-	defer bs.Stop()
-
-	defer os.RemoveAll(options.Dir)
-	defer os.Remove(".state-")
-
-	tkf := cmdtest.RandString()
-	ts := tokenservice.NewFileTokenService().WithTokenFileName(tkf)
-	ic := test.NewClientTest(&test.PasswordReader{
-		Pass: []string{"immudb"},
-	}, ts)
-	ic.Connect(bs.Dialer)
-	ic.Login("immudb")
-
-	cli := new(cli)
-	cli.immucl = ic.Imc
-	_, _ = cli.set([]string{"key", "val"})
+	_, err := cli.set([]string{"key", "val"})
+	require.NoError(t, err)
 
 	msg, err := cli.reference([]string{"val", "key"})
-	if err != nil {
-		t.Fatal("Reference fail", err)
-	}
-	if !strings.Contains(msg, "value") {
-		t.Fatalf("Reference failed: %s", msg)
-	}
+	require.NoError(t, err)
+	require.Contains(t, msg, "value")
 }
 
 func _TestSafeReference(t *testing.T) {
-	options := server.DefaultOptions().WithAuth(true)
-	bs := servertest.NewBufconnServer(options)
+	cli, cleanup := testCli(t)
+	defer cleanup()
 
-	bs.Start()
-	defer bs.Stop()
-
-	defer os.RemoveAll(options.Dir)
-	defer os.Remove(".state-")
-
-	tkf := cmdtest.RandString()
-	ts := tokenservice.NewFileTokenService().WithTokenFileName(tkf)
-	ic := test.NewClientTest(&test.PasswordReader{
-		Pass: []string{"immudb"},
-	}, ts)
-	ic.
-		Connect(bs.Dialer)
-	ic.Login("immudb")
-
-	cli := new(cli)
-	cli.immucl = ic.Imc
-	_, _ = cli.set([]string{"key", "val"})
+	_, err := cli.set([]string{"key", "val"})
+	require.NoError(t, err)
 
 	msg, err := cli.safereference([]string{"val", "key"})
-	if err != nil {
-		t.Fatal("SafeReference fail", err)
-	}
-	if !strings.Contains(msg, "value") {
-		t.Fatalf("SafeReference failed: %s", msg)
-	}
+	require.NoError(t, err)
+	require.Contains(t, msg, "value")
 }

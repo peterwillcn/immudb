@@ -19,7 +19,6 @@ package cli
 import (
 	"os"
 	"path"
-	"strings"
 	"testing"
 
 	"github.com/codenotary/immudb/cmd/cmdtest"
@@ -37,189 +36,67 @@ import (
 
 func TestInit(t *testing.T) {
 	cli := Init(nil)
-	if len(cli.HelpMessage()) == 0 {
-		t.Fatal("cli help failed")
-	}
+	require.NotEmpty(t, cli.HelpMessage())
 }
 func TestRunCommand(t *testing.T) {
-	cli := new(cli)
-	cli.commands = make(map[string]*command, 0)
-	cli.commandsList = make([]*command, 0)
-	cli.initCommands()
-	cli.helpInit()
-
-	options := server.DefaultOptions().WithAuth(true)
-	bs := servertest.NewBufconnServer(options)
-
-	bs.Start()
-	defer bs.Stop()
-
-	defer os.RemoveAll(options.Dir)
-	defer os.Remove(".state-")
-
-	tkf := cmdtest.RandString()
-	ts := tokenservice.NewFileTokenService().WithTokenFileName(tkf)
-	ic := test.NewClientTest(&test.PasswordReader{
-		Pass: []string{"immudb"},
-	}, ts)
-	ic.Connect(bs.Dialer)
-	ic.Login("immudb")
-
-	cli.immucl = ic.Imc
+	cli, cleanup := testCliWithCommants(t)
+	defer cleanup()
 
 	msg := test.CaptureStdout(func() {
 		cli.runCommand([]string{"set", "key", "value"})
 	})
-	if !strings.Contains(msg, "value") {
-		t.Fatal(msg)
-	}
+	require.Contains(t, msg, "value")
 }
 
 func TestRunCommandExtraArgs(t *testing.T) {
-	cli := new(cli)
-	cli.commands = make(map[string]*command, 0)
-	cli.commandsList = make([]*command, 0)
-	cli.initCommands()
-	cli.helpInit()
-
-	options := server.DefaultOptions().WithAuth(true)
-	bs := servertest.NewBufconnServer(options)
-
-	bs.Start()
-	defer bs.Stop()
-
-	defer os.RemoveAll(options.Dir)
-	defer os.Remove(".state-")
-
-	tkf := cmdtest.RandString()
-	ts := tokenservice.NewFileTokenService().WithTokenFileName(tkf)
-	ic := test.NewClientTest(&test.PasswordReader{
-		Pass: []string{"immudb"},
-	}, ts)
-	ic.Connect(bs.Dialer)
-	ic.Login("immudb")
-
-	cli.immucl = ic.Imc
+	cli, cleanup := testCliWithCommants(t)
+	defer cleanup()
 
 	msg := test.CaptureStdout(func() {
 		cli.runCommand([]string{"set", "key", "value", "value"})
 	})
-	if !strings.Contains(msg, "Redunant argument") {
-		t.Fatal(msg)
-	}
+	require.Contains(t, msg, "Redunant argument")
 }
+
 func TestRunMissingArgs(t *testing.T) {
-	cli := new(cli)
-	cli.commands = make(map[string]*command, 0)
-	cli.commandsList = make([]*command, 0)
-	cli.initCommands()
-	cli.helpInit()
-
-	options := server.DefaultOptions().WithAuth(true)
-	bs := servertest.NewBufconnServer(options)
-
-	bs.Start()
-	defer bs.Stop()
-
-	defer os.RemoveAll(options.Dir)
-	defer os.Remove(".state-")
-
-	tkf := cmdtest.RandString()
-	ts := tokenservice.NewFileTokenService().WithTokenFileName(tkf)
-	ic := test.NewClientTest(&test.PasswordReader{
-		Pass: []string{"immudb"},
-	}, ts)
-	ic.Connect(bs.Dialer)
-	ic.Login("immudb")
-
-	cli.immucl = ic.Imc
+	cli, cleanup := testCliWithCommants(t)
+	defer cleanup()
 
 	msg := test.CaptureStdout(func() {
 		cli.runCommand([]string{"set", "key"})
 	})
-	if !strings.Contains(msg, "Not enough arguments") {
-		t.Fatal(msg)
-	}
+	require.Contains(t, msg, "Not enough arguments")
 }
 
 func TestRunWrongCommand(t *testing.T) {
-	cli := new(cli)
-	cli.commands = make(map[string]*command, 0)
-	cli.commandsList = make([]*command, 0)
-	cli.initCommands()
-	cli.helpInit()
+	cli, cleanup := testCliWithCommants(t)
+	defer cleanup()
 
-	options := server.DefaultOptions().WithAuth(true)
-	bs := servertest.NewBufconnServer(options)
-
-	bs.Start()
-	defer bs.Stop()
-
-	defer os.RemoveAll(options.Dir)
-	defer os.Remove(".state-")
-
-	tkf := cmdtest.RandString()
-	ts := tokenservice.NewFileTokenService().WithTokenFileName(tkf)
-	ic := test.NewClientTest(&test.PasswordReader{
-		Pass: []string{"immudb"},
-	}, ts)
-	ic.Connect(bs.Dialer)
-	ic.Login("immudb")
-
-	cli.immucl = ic.Imc
 	msg := test.CaptureStdout(func() {
 		cli.runCommand([]string{"fet", "key"})
 	})
-	if !strings.Contains(msg, "ERROR: Unknown command") {
-		t.Fatal(msg)
-	}
+	require.Contains(t, msg, "ERROR: Unknown command")
 }
 
 func TestCheckCommand(t *testing.T) {
-	cli := new(cli)
-	cli.commands = make(map[string]*command, 0)
-	cli.commandsList = make([]*command, 0)
-	cli.initCommands()
-	cli.helpInit()
+	cli, cleanup := testCliWithCommants(t)
+	defer cleanup()
 
-	options := server.DefaultOptions().WithAuth(true)
-	bs := servertest.NewBufconnServer(options)
-
-	bs.Start()
-	defer bs.Stop()
-
-	defer os.RemoveAll(options.Dir)
-	defer os.Remove(".state-")
-
-	tkf := cmdtest.RandString()
-	ts := tokenservice.NewFileTokenService().WithTokenFileName(tkf)
-	ic := test.NewClientTest(&test.PasswordReader{
-		Pass: []string{"immudb"},
-	}, ts)
-	ic.Connect(bs.Dialer)
-	ic.Login("immudb")
-
-	cli.immucl = ic.Imc
 	l := liner.NewLiner()
 	msg := test.CaptureStdout(func() {
 		cli.checkCommand([]string{"--help"}, l)
 	})
-	if len(msg) == 0 {
-		t.Fatal("Help is empty")
-	}
+	require.NotEmpty(t, msg, "Help must not be empty")
+
 	msg = test.CaptureStdout(func() {
 		cli.checkCommand([]string{"set", "-h"}, l)
 	})
-	if len(msg) == 0 {
-		t.Fatal("Help is empty")
-	}
+	require.NotEmpty(t, msg, "Help must not be empty")
 
 	msg = test.CaptureStdout(func() {
 		cli.checkCommand([]string{"met", "-h"}, l)
 	})
-	if !strings.Contains(msg, "Did you mean this") {
-		t.Fatal("Help is empty")
-	}
+	require.Contains(t, msg, "Did you mean this")
 }
 
 func TestCheckCommandErrors(t *testing.T) {
