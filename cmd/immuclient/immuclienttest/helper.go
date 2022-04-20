@@ -18,12 +18,13 @@ package immuclienttest
 
 import (
 	"bytes"
-	"github.com/codenotary/immudb/pkg/client/homedir"
-	"github.com/codenotary/immudb/pkg/client/tokenservice"
 	"io"
 	"log"
 	"os"
 	"sync"
+
+	"github.com/codenotary/immudb/pkg/client/homedir"
+	"github.com/codenotary/immudb/pkg/client/tokenservice"
 
 	"github.com/codenotary/immudb/cmd/helper"
 	"github.com/codenotary/immudb/cmd/immuclient/immuc"
@@ -45,11 +46,11 @@ type HomedirServiceMock struct {
 }
 
 func (h *HomedirServiceMock) FileExistsInUserHomeDir(pathToFile string) (bool, error) {
-	return true, nil
+	return h.Token != nil, nil
 }
 
 func (h *HomedirServiceMock) WriteFileToUserHomeDir(content []byte, pathToFile string) error {
-	h.Token = content
+	h.Token = append([]byte{}, content...)
 	return nil
 }
 
@@ -58,6 +59,9 @@ func (h *HomedirServiceMock) DeleteFileFromUserHomeDir(pathToFile string) error 
 }
 
 func (h *HomedirServiceMock) ReadFileFromUserHomeDir(pathToFile string) (string, error) {
+	if h.Token == nil {
+		return "", os.ErrNotExist
+	}
 	return string(h.Token), nil
 }
 
